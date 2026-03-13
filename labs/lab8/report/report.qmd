@@ -1,0 +1,1907 @@
+---
+# Preamble
+
+## Author
+author:
+  name: Мантуров Татархан Бесланович
+  degrees: DSc
+  orcid: 0000-0002-0877-7063
+  email: kulyabov-ds@rudn.ru
+  affiliation:
+    - name: Российский университет дружбы народов
+      country: Российская Федерация
+      postal-code: 117198
+      city: Москва
+      address: ул. Миклухо-Маклая, д. 6
+## Title
+title: "Отчёт по лабораторной работе №8"
+subtitle: "Дисциплина: Сетевые технологии"
+license: "CC BY"
+## Generic options
+lang: ru-RU
+number-sections: true
+toc: true
+toc-title: "Содержание"
+toc-depth: 3
+## Crossref customization
+crossref:
+  lof-title: "Список иллюстраций"
+  lot-title: "Список таблиц"
+  lol-title: "Листинги"
+## Bibliography
+bibliography:
+  - bib/cite.bib
+csl: _resources/csl/gost-r-7-0-5-2008-numeric.csl
+## Formats
+format:
+### Pdf output format
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: false
+    toc-depth: 3
+    lof: true # List of figures
+    lot: true # List of tables
+#### Document
+    documentclass: scrreprt
+    papersize: a4
+    fontsize: 12pt
+    linestretch: 1.5
+#### Language
+    babel-lang: russian
+    babel-otherlangs: english
+#### Biblatex
+    cite-method: biblatex
+    biblio-style: gost-numeric
+    biblatexoptions:
+      - backend=biber
+      - langhook=extras
+      - autolang=other*
+#### Misc options
+    csquotes: true
+    indent: true
+    header-includes: |
+      \usepackage{indentfirst}
+      \usepackage{float}
+      \floatplacement{figure}{H}
+      \usepackage[math,RM={Scale=0.94},SS={Scale=0.94},SScon={Scale=0.94},TT={Scale=MatchLowercase,FakeStretch=0.9},DefaultFeatures={Ligatures=Common}]{plex-otf}
+### Docx output format
+  docx:
+    toc: true
+    number-sections: true
+    toc-depth: 3
+---
+
+# Цель работы
+
+Целью данной работы является изучение принципов маршрутизации в IPv4- и IPv6-сетях и принципов настройки сетевого оборудования.
+
+# Задание
+
+1. Требуется настроить динамическую маршрутизацию по протоколам RIP, OSPF
+2. Требуется организовать туннель IPv6 поверх IPv4, позволяющий передавать данные из одной IPv6-сети в другую IPv6-сеть через сеть IPv4.
+3. Выполнить задание для самостоятельного выполнения
+
+# Выполнение лабораторной работы
+
+## Настройка динамической маршрутизации в сетях IPv4 и IPv6
+
+Запустили GNS3 VM и GNS3 и создали новый проект ([рис. @fig-001])
+
+![Создание нового проекта (1)](image/1.png){#fig-001 width=70%}
+
+Задана топология сети ([рис. @fig-002]), адреса сегментов сети (табл. 3.1), адреса, назначаемые
+интерфейсам устройств (табл. 3.2)
+
+![Топология сети](image/2.png){#fig-002 width=70%}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Таблица адресов сетей}
+\label{table:table}
+\begin{tabular}{|p{5cm}|p{5cm}|p{5cm}|}
+\textbf{Устройства} & \textbf{Сеть IPv4} & \textbf{Сеть IPv6} \\
+\hline
+PC1 – gw-01 & 10.0.10.0/24 & 2001:10::/64 \\ \hline
+PC2 – gw-03 & 10.0.11.0/24 & 2001:11::/64 \\ \hline
+gw-01 – gw-02 & 10.0.1.0/24 & 2001:1::/64 \\ \hline
+gw-02 – gw-03 & 10.0.2.0/24 & 2001:2::/64 \\ \hline
+gw-03 – gw-04 & 10.0.3.0/24 & 2001:3::/64 \\ \hline
+gw-04 – gw-01 & 10.0.4.0/24 & 2001:4::/64 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Таблица адресации}
+\label{table:table}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3cm}|p{3cm}|p{3cm}|}
+\textbf{Устройство} & \textbf{Интерфейс} & \textbf{Адрес IP/префикс} & \textbf{Шлюз по умолчанию} & \textbf{Следующее устройство} \\
+\hline
+gw-01 & eth0 & 10.0.10.1/24 & n/a & PC1 \\ \hline
+gw-01 & eth0 & 2001:10::1/64 & n/a & PC1 \\ \hline
+gw-01 & eth1 & 10.0.1.1/24 & n/a & gw-02 \\ \hline
+gw-01 & eth1 & 2001:1::1/64 & n/a & gw-02 \\ \hline
+gw-01 & eth2 & 10.0.4.2/24 & n/a & gw-04 \\ \hline
+gw-01 & eth2 & 2001:4::2/64 & n/a & gw-04 \\ \hline
+gw-02 & eth0 & 10.0.1.2/24 & n/a & gw-01 \\ \hline
+gw-02 & eth0 & 2001:1::2/64 & n/a & gw-01 \\ \hline
+gw-02 & eth1 & 10.0.2.1/24 & n/a & gw-03 \\ \hline
+gw-02 & eth1 & 2001:2::1/64 & n/a & gw-03 \\ \hline
+gw-03 & eth0 & 10.0.11.1/24 & n/a & PC2 \\ \hline
+gw-03 & eth0 & 2001:11::1/64 & n/a & PC2 \\ \hline
+gw-03 & eth1 & 10.0.2.2/24 & n/a & gw-02 \\ \hline
+gw-03 & eth1 & 2001:2::2/64 & n/a & gw-02 \\ \hline
+gw-03 & eth2 & 10.0.3.1/24 & n/a & gw-04 \\ \hline
+gw-03 & eth2 & 2001:3::1/64 & n/a & gw-04 \\ \hline
+gw-04 & eth0 & 10.0.3.2/24 & n/a & gw-03 \\ \hline
+gw-04 & eth0 & 2001:3::2/64 & n/a & gw-03 \\ \hline
+gw-04 & eth1 & 10.0.4.1/24 & n/a & gw-01 \\ \hline
+gw-04 & eth1 & 2001:4::1/64 & n/a & gw-01 \\ \hline
+PC1 & NIC & 10.0.10.10/24 & 10.0.10.1 & gw-01 \\ \hline
+PC1 & NIC & 2001:10::a/64 & n/a & gw-01 \\ \hline
+PC2 & NIC & 10.0.11.10/24 & 10.0.11.1 & gw-03 \\ \hline
+PC2 & NIC & 2001:11::a/64 & n/a & gw-03 \\ \hline
+\end{tabular}
+\end{table}
+
+В рабочем пространстве разместили и соединили устройства в соответствии с топологией, приведённой на ([рис. @fig-002]). Использовали маршрутизаторы FRR. Включили захват трафика на соединении между коммутатором sw-01 и маршрутизатором gw-01, а также между коммутатором sw-02 и маршрутизатором gw-03 ([рис. @fig-003])
+
+![Захват трафика (1)](image/3.png){#fig-003 width=70%}
+
+Присвоили IPv4-адрес оконечному устройству PC1 в соответствии с данными в (табл. 3.2) ([рис. @fig-004]):
+
+```
+ip 10.0.10.10/24 10.0.10.1
+save
+show ip
+```
+
+![Присвоение IPv4-адреса PC1](image/4.png){#fig-004 width=70%}
+
+Присвоили IPv4-адрес оконечному устройству PC2 в соответствии с данными в (табл. 3.2) ([рис. @fig-005]):
+
+```
+ip 10.0.11.10/24 10.0.11.1
+save
+show ip
+```
+
+![Присвоение IPv4-адреса PC2](image/5.png){#fig-005 width=70%}
+
+Настроили IPv4-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-01 ([рис. @fig-006]), ([рис. @fig-007]):
+
+```
+frr# configure terminal
+frr(config)# hostname msk-tbamnturov-gw-01
+msk-tbamnturov-gw-01(config)# interface eth0
+msk-tbamnturov-gw-01(config-if)# ip address 10.0.10.1/24
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth1
+msk-tbamnturov-gw-01(config-if)# ip address 10.0.1.1/24
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth2
+msk-tbamnturov-gw-01(config-if)# ip address 10.0.4.2/24
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+msk-tbamnturov-gw-01# show running-config
+```
+
+![Настройка IPv4-адресов на интерфейсах маршрутизатора gw-01](image/6.png){#fig-006 width=70%}
+
+![Проверка IPv4-адресов на интерфейсах маршрутизатора gw-01](image/7.png){#fig-007 width=70%}
+
+Настроили IPv4-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-02 ([рис. @fig-008]), ([рис. @fig-009]):
+
+```
+frr# configure terminal
+frr(config)# hostname msk-tbamnturov-gw-02
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# ip address 10.0.1.2/24
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth1
+msk-tbamnturov-gw-02(config-if)# ip address 10.0.2.1/24
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+msk-tbamnturov-gw-02# show running-config
+```
+
+![Настройка IPv4-адресов на интерфейсах маршрутизатора gw-02](image/8.png){#fig-008 width=70%}
+
+![Проверка IPv4-адресов на интерфейсах маршрутизатора gw-02](image/9.png){#fig-009 width=70%}
+
+Настроили IPv4-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-03 ([рис. @fig-010]), ([рис. @fig-011]):
+
+```
+frr# configure terminal
+frr(config)# hostname msk-tbamnturov-gw-03
+msk-tbamnturov-gw-03(config)# interface eth0
+msk-tbamnturov-gw-03(config-if)# ip address 10.0.11.1/24
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth1
+msk-tbamnturov-gw-03(config-if)# ip address 10.0.2.2/24
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth2
+msk-tbamnturov-gw-03(config-if)# ip address 10.0.3.1/24
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+msk-tbamnturov-gw-03# show running-config
+```
+
+![Настройка IPv4-адресов на интерфейсах маршрутизатора gw-03](image/10.png){#fig-010 width=70%}
+
+![Проверка IPv4-адресов на интерфейсах маршрутизатора gw-03](image/11.png){#fig-011 width=70%}
+
+Настроили IPv4-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-04 ([рис. @fig-012]), ([рис. @fig-013]):
+
+```
+frr# configure terminal
+frr(config)# hostname msk-tbamnturov-gw-04
+msk-tbamnturov-gw-04(config)# interface eth0
+msk-tbamnturov-gw-04(config-if)# ip address 10.0.3.2/24
+msk-tbamnturov-gw-04(config-if)# no shutdown
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# ip address 10.0.4.1/24
+msk-tbamnturov-gw-04(config-if)# no shutdown
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+msk-tbamnturov-gw-04# show running-config
+```
+
+![Настройка IPv4-адресов на интерфейсах маршрутизатора gw-04](image/12.png){#fig-012 width=70%}
+
+![Проверка IPv4-адресов на интерфейсах маршрутизатора gw-04](image/13.png){#fig-013 width=70%}
+
+Присвоили IPv6-адрес оконечному устройству PC1 в соответствии с данными в (табл. 3.2) ([рис. @fig-014]):
+
+```
+ip 2001:10::a/64
+save
+show ipv6
+```
+
+![Присвоение IPv6-адреса PC1](image/14.png){#fig-014 width=70%}
+
+Присвоили IPv6-адрес оконечному устройству PC2 в соответствии с данными в (табл. 3.2) ([рис. @fig-015]):
+
+```
+ip 2001:11::a/64
+save
+show ipv6
+```
+
+![Присвоение IPv6-адреса PC2](image/15.png){#fig-015 width=70%}
+
+Настроили IPv6-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-01 ([рис. @fig-016]), ([рис. @fig-017]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# ipv6 forwarding
+msk-tbamnturov-gw-01(config)# interface eth0
+msk-tbamnturov-gw-01(config-if)# ipv6 address 2001:10::1/64
+msk-tbamnturov-gw-01(config-if)# no ipv6 nd suppress-ra
+msk-tbamnturov-gw-01(config-if)# ipv6 nd prefix 2001:10::/64
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth1
+msk-tbamnturov-gw-01(config-if)# ipv6 address 2001:1::1/64
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth2
+msk-tbamnturov-gw-01(config-if)# ipv6 address 2001:4::2/64
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+msk-tbamnturov-gw-01# show running-config
+```
+
+![Настройка IPv6-адресов на интерфейсах маршрутизатора gw-01](image/16.png){#fig-016 width=70%}
+
+![Проверка IPv6-адресов на интерфейсах маршрутизатора gw-01](image/17.png){#fig-017 width=70%}
+
+Настроили IPv6-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-02 ([рис. @fig-018]), ([рис. @fig-019]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# ipv6 forwarding
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# ipv6 address 2001:1::2/64
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth1
+msk-tbamnturov-gw-02(config-if)# ipv6 address 2001:2::1/64
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+msk-tbamnturov-gw-02# show running-config
+```
+
+![Настройка IPv6-адресов на интерфейсах маршрутизатора gw-02](image/18.png){#fig-018 width=70%}
+
+![Проверка IPv6-адресов на интерфейсах маршрутизатора gw-02](image/19.png){#fig-019 width=70%}
+
+Настроили IPv6-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-03 ([рис. @fig-020]), ([рис. @fig-021]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# ipv6 forwarding
+msk-tbamnturov-gw-03(config)# interface eth0
+msk-tbamnturov-gw-03(config-if)# ipv6 address 2001:11::1/64
+msk-tbamnturov-gw-03(config-if)# no ipv6 nd suppress-ra
+msk-tbamnturov-gw-03(config-if)# ipv6 nd prefix 2001:11::/64
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth1
+msk-tbamnturov-gw-03(config-if)# ipv6 address 2001:2::2/64
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth2
+msk-tbamnturov-gw-03(config-if)# ipv6 address 2001:3::1/64
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+msk-tbamnturov-gw-03# show running-config
+```
+
+![Настройка IPv6-адресов на интерфейсах маршрутизатора gw-03](image/20.png){#fig-020 width=70%}
+
+![Проверка IPv6-адресов на интерфейсах маршрутизатора gw-03](image/21.png){#fig-021 width=70%}
+
+Настроили IPv6-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-04 ([рис. @fig-022]), ([рис. @fig-023]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# ipv6 forwarding
+msk-tbamnturov-gw-04(config)# interface eth0
+msk-tbamnturov-gw-04(config-if)# ipv6 address 2001:3::2/64
+msk-tbamnturov-gw-04(config-if)# no shutdown
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# ipv6 address 2001:4::1/64
+msk-tbamnturov-gw-04(config-if)# no shutdown
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+msk-tbamnturov-gw-04# show running-config
+```
+
+![Настройка IPv6-адресов на интерфейсах маршрутизатора gw-04](image/22.png){#fig-022 width=70%}
+
+![Проверка IPv6-адресов на интерфейсах маршрутизатора gw-04](image/23.png){#fig-023 width=70%}
+
+### Настройка динамической маршрутизации по протоколу RIP
+
+На маршрутизаторах настроили RIP для сетей IPv4 в качестве протокола динамической маршрутизации:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-024]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# router rip
+msk-tbamnturov-gw-01(config-router)# version 2
+msk-tbamnturov-gw-01(config-router)# network eth0
+msk-tbamnturov-gw-01(config-router)# network eth1
+msk-tbamnturov-gw-01(config-router)# network eth2
+msk-tbamnturov-gw-01(config-router)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка маршрутизации по протоколу RIP на gw-01](image/24.png){#fig-024 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-025]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# router rip
+msk-tbamnturov-gw-02(config-router)# version 2
+msk-tbamnturov-gw-02(config-router)# network eth0
+msk-tbamnturov-gw-02(config-router)# network eth1
+msk-tbamnturov-gw-02(config-router)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка маршрутизации по протоколу RIP на gw-02](image/25.png){#fig-025 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-026]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# router rip
+msk-tbamnturov-gw-03(config-router)# version 2
+msk-tbamnturov-gw-03(config-router)# network eth0
+msk-tbamnturov-gw-03(config-router)# network eth1
+msk-tbamnturov-gw-03(config-router)# network eth2
+msk-tbamnturov-gw-03(config-router)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка маршрутизации по протоколу RIP на gw-03](image/26.png){#fig-026 width=70%}
+
+- для msk-tbamnturov-gw-04 ([рис. @fig-027]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# router rip
+msk-tbamnturov-gw-04(config-router)# version 2
+msk-tbamnturov-gw-04(config-router)# network eth0
+msk-tbamnturov-gw-04(config-router)# network eth1
+msk-tbamnturov-gw-04(config-router)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка маршрутизации по протоколу RIP на gw-04](image/27.png){#fig-027 width=70%}
+
+Убедились, что маршрутизация по RIP настроена ([рис. @fig-028]), ([рис. @fig-029]), ([рис. @fig-030]), ([рис. @fig-031]), ([рис. @fig-032]), ([рис. @fig-033]), ([рис. @fig-034]), ([рис. @fig-035]), ([рис. @fig-036]), ([рис. @fig-037]), ([рис. @fig-038]), ([рис. @fig-039]):
+
+```
+msk-tbamnturov-gw-0x#show ip route rip
+msk-tbamnturov-gw-0x#show ip rip
+msk-tbamnturov-gw-0x#show ip rip status
+```
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-01 (1)](image/28.png){#fig-028 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-01 (2)](image/29.png){#fig-029 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-01 (3)](image/30.png){#fig-030 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-02 (1)](image/31.png){#fig-031 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-02 (2)](image/32.png){#fig-032 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-02 (3)](image/33.png){#fig-033 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-03 (1)](image/34.png){#fig-034 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-03 (2)](image/35.png){#fig-035 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-03 (3)](image/36.png){#fig-036 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-04 (1)](image/37.png){#fig-037 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-04 (2)](image/38.png){#fig-038 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-04 (3)](image/39.png){#fig-039 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит через маршрутизатор msk-tbamnturov-gw-02 ([рис. @fig-040]):
+
+```
+PC1> ping 10.0.11.10
+PC1> trace 10.0.11.10 -P 6
+```
+
+![Эхо-запрос от PC1 к PC2 (1)](image/40.png){#fig-040 width=70%}
+ 
+Проверили метрики протокола RIP: ```msk-tbamnturov-gw-01# show ip rip``` ([рис. @fig-041])
+
+![Метрики протокола RIP (1)](image/41.png){#fig-041 width=70%}
+
+Так как пакет проходит через маршрутизатор msk-tbamnturov-gw-02, отключили на нём интерфейс ([рис. @fig-042]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# shutdown
+```
+
+![Отключение интерфейса на маршрутизаторе gw-02 (1)](image/42.png){#fig-042 width=70%}
+
+Проверили метрики протокола RIP: ```msk-tbamnturov-gw-01# show ip rip``` ([рис. @fig-043])
+
+![Метрики протокола RIP (2)](image/43.png){#fig-043 width=70%}
+
+С PC1 пропинговали PC2. Теперь пакет проходит через маршрутизатор msk-tbamnturov-gw-04. Маршрут восстановился ~ за 3 минуты ([рис. @fig-044])
+
+![Эхо-запрос от PC1 к PC2 (2)](image/44.png){#fig-044 width=70%}
+
+Включили на маршрутизаторе msk-tbamnturov-gw-02 интерфейс ([рис. @fig-045]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# no shutdown
+```
+
+![Включение интерфейса на маршрутизаторе gw-02 (1)](image/45.png){#fig-045 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит всё равно через маршрутизатор msk-tbamnturov-gw-04 ([рис. @fig-046]), ([рис. @fig-047])
+
+![Метрики протокола RIP (3)](image/46.png){#fig-046 width=70%}
+
+![Эхо-запрос от PC1 к PC2 (3)](image/47.png){#fig-047 width=70%}
+
+**Объяснения:**
+
+- RIP на gw-01 имел два равнозначных маршрута до сети 10.0.11.0/24 — через 10.0.1.2 и через 10.0.4.1. Был выбран один из них (через 10.0.1.2)
+
+- При отключении интерфейса маршрут через 10.0.1.2 исчез, остался только через 10.0.4.1
+
+- После восстановления снова появились два равнозначных маршрута, но RIP не стал переключаться обратно на первоначальный (через 10.0.1.2), а оставил текущий активный путь через 10.0.4.1
+
+- Это наверное нормальное поведение RIP. При наличии нескольких путей с одинаковой метрикой протокол стремится избежать лишних изменений и сохраняет уже используемый маршрут
+
+Посмотрели захваченный на соединениях трафик ([рис. @fig-048]), ([рис. @fig-049]) 
+
+![Захваченный трафик на соединении sw-01 - gw-01 (1)](image/48.png){#fig-048 width=70%}
+
+![Захваченный трафик на соединении gw-03 - sw-02 (2)](image/49.png){#fig-049 width=70%}
+
+На маршрутизаторах настроили RIPng для сетей IPv6:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-050]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# router ripng
+msk-tbamnturov-gw-01(config-router)# network eth0
+msk-tbamnturov-gw-01(config-router)# network eth1
+msk-tbamnturov-gw-01(config-router)# network eth2
+msk-tbamnturov-gw-01(config-router)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка маршрутизации по протоколу RIPng на gw-01](image/50.png){#fig-050 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-051]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# router ripng
+msk-tbamnturov-gw-02(config-router)# network eth0
+msk-tbamnturov-gw-02(config-router)# network eth1
+msk-tbamnturov-gw-02(config-router)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка маршрутизации по протоколу RIPng на gw-02](image/51.png){#fig-051 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-052]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# router ripng
+msk-tbamnturov-gw-03(config-router)# network eth0
+msk-tbamnturov-gw-03(config-router)# network eth1
+msk-tbamnturov-gw-03(config-router)# network eth2
+msk-tbamnturov-gw-03(config-router)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка маршрутизации по протоколу RIPng на gw-03](image/52.png){#fig-052 width=70%}
+
+- для msk-tbamnturov-gw-04 ([рис. @fig-053]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# router ripng
+msk-tbamnturov-gw-04(config-router)# network eth0
+msk-tbamnturov-gw-04(config-router)# network eth1
+msk-tbamnturov-gw-04(config-router)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка маршрутизации по протоколу RIPng на gw-04](image/53.png){#fig-053 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит через маршрутизатор msk-tbamnturov-gw-02 ([рис. @fig-054]):
+
+```
+PC1> ping 2001:11::a
+PC1> trace 2001:11::a
+```
+
+![Эхо-запрос от PC1 к PC2 (4)](image/54.png){#fig-054 width=70%}
+ 
+Проверили метрики протокола RIPng: ```msk-tbamnturov-gw-01# show ipv6 ripng``` ([рис. @fig-055])
+
+![Метрики протокола RIPng (1)](image/55.png){#fig-055 width=70%}
+
+Так как пакет проходит через маршрутизатор msk-tbamnturov-gw-02, отключили на нём интерфейс ([рис. @fig-056]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# shutdown
+```
+
+![Отключение интерфейса на маршрутизаторе gw-02 (2)](image/56.png){#fig-056 width=70%}
+
+Проверили метрики протокола RIPng: ```msk-tbamnturov-gw-01# show ipv6 ripng``` ([рис. @fig-057])
+
+![Метрики протокола RIPng (2)](image/57.png){#fig-057 width=70%}
+
+С PC1 пропинговали PC2. Путь не восстановился ([рис. @fig-058])
+
+![Эхо-запрос от PC1 к PC2 (5)](image/58.png){#fig-058 width=70%}
+
+Включили на маршрутизаторе msk-tbamnturov-gw-02 интерфейс ([рис. @fig-059]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# no shutdown
+```
+
+![Включение интерфейса на маршрутизаторе gw-02 (2)](image/59.png){#fig-059 width=70%}
+
+С PC1 пропинговали PC2. Маршрут восстановился ~ за 2 минуты. Теперь пакет проходит снова через маршрутизатор msk-tbamnturov-gw-02 ([рис. @fig-060]), ([рис. @fig-061])
+
+![Метрики протокола RIPng (3)](image/60.png){#fig-060 width=70%}
+
+![Эхо-запрос от PC1 к PC2 (6)](image/61.png){#fig-061 width=70%}
+
+**Объяснения:** при полном разрыве критического звена (gw-02) связность может временно теряться до восстановления основного маршрута. Протокол успешно возвращается к оптимальным путям после восстановления интерфейсов
+
+Посмотрели захваченный на соединениях трафик ([рис. @fig-062]), ([рис. @fig-063]) 
+
+![Захваченный трафик на соединении sw-01 - gw-01 (3)](image/62.png){#fig-062 width=70%}
+
+![Захваченный трафик на соединении gw-03 - sw-02 (4)](image/63.png){#fig-063 width=70%}
+
+### Настройка динамической маршрутизации по протоколу OSPF
+
+На маршрутизаторах настроили OSPFv2 для сетей IPv4:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-064]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# router ospf
+msk-tbamnturov-gw-01(config-router)# network 10.0.10.0/24 area 0.0.0.0
+msk-tbamnturov-gw-01(config-router)# network 10.0.1.0/24 area 0.0.0.0
+msk-tbamnturov-gw-01(config-router)# network 10.0.4.0/24 area 0.0.0.0
+msk-tbamnturov-gw-01(config-router)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv2 на gw-01](image/64.png){#fig-064 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-025]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# router ospf
+msk-tbamnturov-gw-02(config-router)# network 10.0.1.0/24 area 0.0.0.0
+msk-tbamnturov-gw-02(config-router)# network 10.0.2.0/24 area 0.0.0.0
+msk-tbamnturov-gw-02(config-router)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv2 на gw-02](image/65.png){#fig-065 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-026]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# router ospf
+msk-tbamnturov-gw-03(config-router)# network 10.0.11.0/24 area 0.0.0.0
+msk-tbamnturov-gw-03(config-router)# network 10.0.2.0/24 area 0.0.0.0
+msk-tbamnturov-gw-03(config-router)# network 10.0.3.0/24 area 0.0.0.0
+msk-tbamnturov-gw-03(config-router)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv2 на gw-03](image/66.png){#fig-066 width=70%}
+
+- для msk-tbamnturov-gw-04 ([рис. @fig-027]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# router ospf
+msk-tbamnturov-gw-04(config-router)# network 10.0.3.0/24 area 0.0.0.0
+msk-tbamnturov-gw-04(config-router)# network 10.0.4.0/24 area 0.0.0.0
+msk-tbamnturov-gw-04(config-router)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv2 на gw-04](image/67.png){#fig-067 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит через маршрутизатор msk-tbamnturov-gw-04 ([рис. @fig-068]):
+
+```
+PC1> ping 10.0.11.10
+PC1> trace 10.0.11.10 -P 6
+```
+
+![Эхо-запрос от PC1 к PC2 (7)](image/68.png){#fig-068 width=70%}
+
+Проверили таблицу маршрутизации протокола OSPFv2 ([рис. @fig-069]):
+
+```
+msk-tbamnturov-gw-01# show ip ospf neighbor
+msk-tbamnturov-gw-01# show ip ospf route
+```
+
+![Таблица маршрутизации протокола OSPFv2 (1)](image/69.png){#fig-069 width=70%}
+
+Так как пакет проходит через маршрутизатор msk-tbamnturov-gw-04, отключили на нём интерфейс ([рис. @fig-070]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# shutdown
+```
+
+![Отключение интерфейса на маршрутизаторе gw-04](image/70.png){#fig-070 width=70%}
+
+Проверили таблицу маршрутизации протокола OSPFv2 ([рис. @fig-071]):
+
+```
+msk-tbamnturov-gw-01# show ip ospf neighbor
+msk-tbamnturov-gw-01# show ip ospf route
+```
+
+![Таблица маршрутизации протокола OSPFv2 (2)](image/71.png){#fig-071 width=70%}
+
+С PC1 пропинговали PC2. Теперь пакет проходит через маршрутизатор msk-tbamnturov-gw-02. Маршрут восстановился ~ за 2 минуты ([рис. @fig-072])
+
+![Эхо-запрос от PC1 к PC2 (8)](image/72.png){#fig-072 width=70%}
+
+Включили на маршрутизаторе msk-tbamnturov-gw-04 интерфейс ([рис. @fig-073]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# no shutdown
+```
+
+![Включение интерфейса на маршрутизаторе gw-04](image/73.png){#fig-073 width=70%}
+
+С PC1 пропинговали PC2. Пакет снова проходит через маршрутизатор msk-tbamnturov-gw-04 ([рис. @fig-074]), ([рис. @fig-075])
+
+![Таблица маршрутизации протокола OSPFv2 (3)](image/74.png){#fig-074 width=70%}
+
+![Эхо-запрос от PC1 к PC2 (9)](image/75.png){#fig-075 width=70%}
+
+**Объяснения:** 
+
+- OSPF работает, два соседа у gw-01: 10.0.2.1 (gw-02) и 10.0.4.1 (gw-04)
+
+- После отключения интерфейса на муршрутизаторе gw-04 cосед 10.0.4.1 исчез из таблицы OSPF. Остался только путь через 10.0.1.2
+
+- После включения интерфейса на маршрутизаторе gw-04 сосед 10.0.4.1 вернулсяи вернулся исходный путь
+
+- После восстановления интерфейса на gw-04, OSPF вернул трафик на исходный путь через 10.0.4.1. Это демонстрирует ключевое отличие OSPF от RIP: OSPF полностью пересчитывает топологию при изменениях и может выбирать оптимальный путь на основе более сложных метрик. В отличие от RIP, который сохраняет текущий маршрут при равных метриках, OSPF активно управляет выбором пути при восстановлении связности
+
+Посмотрели захваченный на соединениях трафик ([рис. @fig-076]), ([рис. @fig-077]) 
+
+![Захваченный трафик на соединении sw-01 - gw-01 (5)](image/76.png){#fig-076 width=70%}
+
+![Захваченный трафик на соединении gw-03 - sw-02 (6)](image/77.png){#fig-077 width=70%}
+
+На маршрутизаторах настроили OSPFv3 для сетей IPv6:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-078]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# router ospf6
+msk-tbamnturov-gw-01(config-rtr)# ospf6 router-id 1.1.1.1
+msk-tbamnturov-gw-01(config-rtr)# exit
+msk-tbamnturov-gw-01(config)# interface eth0
+msk-tbamnturov-gw-01(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth1
+msk-tbamnturov-gw-01(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth2
+msk-tbamnturov-gw-01(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv3 на gw-01](image/78.png){#fig-078 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-079]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# router ospf6
+msk-tbamnturov-gw-02(config-rtr)# ospf6 router-id 2.2.2.2
+msk-tbamnturov-gw-02(config-rtr)# exit
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth1
+msk-tbamnturov-gw-02(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv3 на gw-02](image/79.png){#fig-079 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-080]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# router ospf6
+msk-tbamnturov-gw-03(config-rtr)# ospf6 router-id 3.3.3.3
+msk-tbamnturov-gw-03(config-rtr)# exit
+msk-tbamnturov-gw-03(config)# interface eth0
+msk-tbamnturov-gw-03(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth1
+msk-tbamnturov-gw-03(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth2
+msk-tbamnturov-gw-03(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv3 на gw-03](image/80.png){#fig-080 width=70%}
+
+- для msk-tbamnturov-gw-04 ([рис. @fig-081]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# router ospf6
+msk-tbamnturov-gw-04(config-rtr)# ospf6 router-id 4.4.4.4
+msk-tbamnturov-gw-04(config-rtr)# exit
+msk-tbamnturov-gw-04(config)# interface eth0
+msk-tbamnturov-gw-04(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv3 на gw-04](image/81.png){#fig-081 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит через маршрутизатор msk-tbamnturov-gw-02 ([рис. @fig-082]):
+
+```
+PC1> ping 2001:11::a
+PC1> trace 2001:11::a
+```
+
+![Эхо-запрос от PC1 к PC2 (10)](image/82.png){#fig-082 width=70%}
+
+Проверили таблицу маршрутизации протокола OSPFv3 ([рис. @fig-083]):
+
+```
+msk-tbamnturov-gw-01# show ipv6 ospf6 neighbor
+msk-tbamnturov-gw-01# show ipv6 ospf6 route
+```
+
+![Таблица маршрутизации протокола OSPFv3 (1)](image/83.png){#fig-083 width=70%}
+
+Так как пакет проходит через маршрутизатор msk-tbamnturov-gw-02, отключили на нём интерфейс ([рис. @fig-084]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# shutdown
+```
+
+![Отключение интерфейса на маршрутизаторе gw-02 (3)](image/84.png){#fig-084 width=70%}
+
+Проверили таблицу маршрутизации протокола OSPFv3 ([рис. @fig-085]):
+
+```
+msk-tbamnturov-gw-01# show ipv6 ospf6 neighbor
+msk-tbamnturov-gw-01# show ipv6 ospf6 route
+```
+
+![Таблица маршрутизации протокола OSPFv3 (2)](image/85.png){#fig-085 width=70%}
+
+С PC1 пропинговали PC2. Теперь пакет проходит через маршрутизатор msk-tbamnturov-gw-04. Маршрут восстановился ~ за 2 минуты ([рис. @fig-086])
+
+![Эхо-запрос от PC1 к PC2 (11)](image/86.png){#fig-086 width=70%}
+
+Включили на маршрутизаторе msk-tbamnturov-gw-02 интерфейс ([рис. @fig-087]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# no shutdown
+```
+
+![Включение интерфейса на маршрутизаторе gw-02 (3)](image/87.png){#fig-087 width=70%}
+
+С PC1 пропинговали PC2. Пакет снова проходит через маршрутизатор msk-tbamnturov-gw-02 ([рис. @fig-088]), ([рис. @fig-089])
+
+![Таблица маршрутизации протокола OSPFv3 (3)](image/88.png){#fig-088 width=70%}
+
+![Эхо-запрос от PC1 к PC2 (12)](image/89.png){#fig-089 width=70%}
+
+**Объяснения:** 
+
+- Исходное состояние: трафик до 2001:11::a идёт через gw-02 (2001:1::2), так как OSPFv3 выбрал этот путь как оптимальный
+
+- После отключения интерфейса eth0 на gw-02: соседство OSPFv3 с gw-02 потеряно, маршрут переключился на gw-04 (2001:4::1) как единственный доступный путь
+
+- После включения интерфейса eth0 на gw-02: соседство OSPFv3 восстановилось (~1-2 минуты), трафик вернулся на исходный путь через gw-02, а не остался через gw-04
+
+- Протокол обеспечивает быстрое восстановление маршрутизации (1-2 минуты) после отказа и возврат к оптимальному пути после восстановления связи. В отличие от RIP, OSPFv3 активно пересчитывает топологию и выбирает путь с наименьшей метрикой, что и привело к возврату трафика через gw-02 после включения его интерфейса.
+
+Посмотрели захваченный на соединениях трафик ([рис. @fig-090]), ([рис. @fig-091]) 
+
+![Захваченный трафик на соединении sw-01 - gw-01 (7)](image/90.png){#fig-090 width=70%}
+
+![Захваченный трафик на соединении gw-03 - sw-02 (8)](image/91.png){#fig-091 width=70%}
+
+## Построение туннеля IPv6–IPv4
+
+Запустили GNS3 VM и GNS3 и создали новый проект ([рис. @fig-092])
+
+![Создание нового проекта (2)](image/92.png){#fig-092 width=70%}
+
+Заданы две IPv6-сети и IPv4-сеть ([рис. @fig-093]), адреса, назначаемые устройствам сети (табл. 3.3)
+
+![Топология с двумя IPv6-сетями и туннелем IPv4](image/93.png){#fig-093 width=70%}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Таблица адресации}
+\label{table:table}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3cm}|p{3cm}|}
+\textbf{Устройство} & \textbf{Интерфейс} & \textbf{Адрес} & \textbf{Шлюз по умолчанию} \\
+\hline
+R1 & eth0 & 1000::1/64 & - \\ \hline
+R1 & eth1 & 10.0.0.1/8 & - \\ \hline
+R1 & Tunnel0 & 1001::1/64 & - \\ \hline
+R2 & eth0 & 1002::1/64 & - \\ \hline
+R2 & eth1 & 20.0.0.2/8 & - \\ \hline
+R2 & Tunnel0 & 1001::2/64 & - \\ \hline
+R3 & eth0 & 10.0.0.2/8 & - \\ \hline
+R3 & eth1 & 20.0.0.1/8 & - \\ \hline
+PC1 & - & 1000::a/64 & 1000::1 \\ \hline
+PC2 & - & 1002::a/64 & 1002::1 \\ \hline
+\end{tabular}
+\end{table}
+
+В рабочем пространстве разместили и соединили устройства в соответствии с топологией, приведённой на ([рис. @fig-093]). Использовали маршрутизаторы VyOS. Включили захват трафика на соединении между первым и третьим мааршрутизаторами ([рис. @fig-094])
+
+![Захват трафика (2)](image/94.png){#fig-094 width=70%}
+
+Присвоили адрес оконечному устройству PC1 в соответствии с данными в (табл. 3.3) ([рис. @fig-095]):
+
+```
+ip 1000::a/64
+save
+show ipv6
+```
+
+![Присвоение адреса PC1](image/95.png){#fig-095 width=70%}
+
+Присвоили адрес оконечному устройству PC2 в соответствии с данными в (табл. 3.3) ([рис. @fig-096]):
+
+```
+ip 1002::a/64
+save
+show ipv6
+```
+
+![Присвоение адреса PC2](image/96.png){#fig-096 width=70%}
+
+На маршрутизаторах перешли в режим конфигурирования, изменили имя устройства (вместо x - порядковый номер устройства) ([рис. @fig-097]), ([рис. @fig-098]), ([рис. @fig-099]):
+
+```
+vyos@vyos$ configure
+vyos@vyos# set system host-name msk-tbamnturov-gw-0x
+vyos@vyos# compare
+vyos@vyos# commit
+vyos@vyos# save
+vyos@vyos# exit
+vyos@vyos$ reboot
+```
+
+![Изменение имени gw-01](image/97.png){#fig-097 width=70%}
+
+![Изменение имени gw-02](image/98.png){#fig-098 width=70%}
+
+![Изменение имени gw-03](image/99.png){#fig-099 width=70%}
+
+Настроили адреса на интерфейсах маршрутизаторов:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-100]):
+
+```
+vyos@msk-tbamnturov-gw-01:~$ configure
+vyos@msk-tbamnturov-gw-01# set interfaces ethernet eth0 address 1000::1/64
+vyos@msk-tbamnturov-gw-01# set interfaces ethernet eth1 address 10.0.0.1/8
+vyos@msk-tbamnturov-gw-01# set service router-advert interface eth0 prefix 1000::/64
+vyos@msk-tbamnturov-gw-01# commit
+vyos@msk-tbamnturov-gw-01# save
+```
+
+![Настройка адресов на интерфейсах маршрутизатора gw-01](image/100.png){#fig-100 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-101]):
+
+```
+vyos@msk-tbamnturov-gw-02:~$ configure
+vyos@msk-tbamnturov-gw-02# set interfaces ethernet eth0 address 1002::1/64
+vyos@msk-tbamnturov-gw-02# set interfaces ethernet eth1 address 20.0.0.2/8
+vyos@msk-tbamnturov-gw-02# set service router-advert interface eth0 prefix 1002::/64
+vyos@msk-tbamnturov-gw-02# commit
+vyos@msk-tbamnturov-gw-02# save
+```
+
+![Настройка адресов на интерфейсах маршрутизатора gw-02](image/101.png){#fig-101 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-102]), ([рис. @fig-103]):
+
+```
+vyos@msk-tbamnturov-gw-03:~$ configure
+vyos@msk-tbamnturov-gw-03# set interfaces ethernet eth0 address 10.0.0.2/8
+vyos@msk-tbamnturov-gw-03# set interfaces ethernet eth1 address 20.0.0.1/8
+vyos@msk-tbamnturov-gw-03# commit
+vyos@msk-tbamnturov-gw-03# save
+```
+
+![Настройка адресов на интерфейсах маршрутизатора gw-03 (1)](image/102.png){#fig-102 width=70%}
+
+![Настройка адресов на интерфейсах маршрутизатора gw-03 (2)](image/103.png){#fig-103 width=70%}
+
+Убедились,что на PC появились адреса ближайших к ним маршрутизаторов ([рис. @fig-104]), ([рис. @fig-105]):
+
+```
+PCx: show ipv6
+```
+
+![Проверка адреса ближайшего маршрутизатора на PC1](image/104.png){#fig-104 width=70%}
+
+![Проверка адреса ближайшего маршрутизатора на PC2](image/105.png){#fig-105 width=70%}
+
+Проверили маршруты с маршрутизатора R1 ([рис. @fig-106]), ([рис. @fig-107]):
+
+```
+vyos@msk-tbamnturov-gw-01:~$ ping 10.0.0.2
+vyos@msk-tbamnturov-gw-01:~$ ping 20.0.0.1
+vyos@msk-tbamnturov-gw-01:~$ ping 20.0.0.2
+```
+
+![Проверка маршрутов с маршрутизатора R1 (1)](image/106.png){#fig-106 width=70%}
+
+![Захваченный трафик (1)](image/107.png){#fig-107 width=70%}
+
+Эхо запросы проходят только до 10.0.0.2 - адрес интерфейса eth0 маршутизатора gw-03, который находится в той же сети. Два остальных адреса не доступны, так как находятся в других подсетях
+
+Настроили маршрутизацию IPv4:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-108]):
+
+```
+vyos@msk-tbamnturov-gw-01:~$ configure
+vyos@msk-tbamnturov-gw-01# set protocols rip network 10.0.0.0/8
+vyos@msk-tbamnturov-gw-01# commit
+vyos@msk-tbamnturov-gw-01# save
+```
+
+![Настройка маршрутизации IPv4 на gw-01](image/108.png){#fig-108 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-109]):
+
+```
+vyos@msk-tbamnturov-gw-02:~$ configure
+vyos@msk-tbamnturov-gw-02# set protocols rip network 20.0.0.0/8
+vyos@msk-tbamnturov-gw-02# commit
+vyos@msk-tbamnturov-gw-02# save
+```
+
+![Настройка маршрутизации IPv4 на gw-02](image/109.png){#fig-109 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-110]):
+
+```
+vyos@msk-tbamnturov-gw-03:~$ configure
+vyos@msk-tbamnturov-gw-03# set protocols rip network 10.0.0.0/8
+vyos@msk-tbamnturov-gw-03# set protocols rip network 20.0.0.0/8
+vyos@msk-tbamnturov-gw-03# commit
+vyos@msk-tbamnturov-gw-03# save
+```
+
+![Настройка маршрутизации IPv4 на gw-03](image/110.png){#fig-110 width=70%}
+
+Проверили маршруты ([рис. @fig-111]), ([рис. @fig-112]):
+
+```
+vyos@msk-user-gw-01:~$ ping 10.0.0.2
+vyos@msk-user-gw-01:~$ ping 20.0.0.1
+vyos@msk-user-gw-01:~$ ping 20.0.0.2
+```
+
+![Проверка маршрутов с маршрутизатора R1 (2)](image/111.png){#fig-111 width=70%}
+
+![Захваченный трафик (2)](image/112.png){#fig-112 width=70%}
+
+После настройки динамическлой маршрутизации по протоколу RIP эхо-запросы доставляются до всех адресов
+
+Создали туннель IPv6 через сеть IPv4:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-113]):
+
+```
+vyos@msk-tbamnturov-gw-01:~$ configure
+vyos@msk-tbamnturov-gw-01# set interfaces tunnel tun0 encapsulation sit
+vyos@msk-tbamnturov-gw-01# set interfaces tunnel tun0 source-address 10.0.0.1
+vyos@msk-tbamnturov-gw-01# set interfaces tunnel tun0 remote 20.0.0.2
+vyos@msk-tbamnturov-gw-01# set interfaces tunnel tun0 address 1001::1/64
+vyos@msk-tbamnturov-gw-01# commit
+vyos@msk-tbamnturov-gw-01# save
+```
+
+![Создание туннеля IPv6 через сеть IPv4 на gw-01](image/113.png){#fig-113 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-114]):
+
+```
+vyos@msk-tbamnturov-gw-02:~$ configure
+vyos@msk-tbamnturov-gw-02# set interfaces tunnel tun0 encapsulation sit
+vyos@msk-tbamnturov-gw-02# set interfaces tunnel tun0 source-address 20.0.0.2
+vyos@msk-tbamnturov-gw-02# set interfaces tunnel tun0 remote 10.0.0.1
+vyos@msk-tbamnturov-gw-02# set interfaces tunnel tun0 address 1001::2/64
+vyos@msk-tbamnturov-gw-02# commit
+vyos@msk-tbamnturov-gw-02# save
+```
+
+![Создание туннеля IPv6 через сеть IPv4 на gw-02](image/114.png){#fig-114 width=70%}
+
+Настроили статическую маршрутизацию IPv6:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-115]):
+
+```
+vyos@msk-tbamnturov-gw-01:~$ configure
+vyos@msk-tbamnturov-gw-01# set protocols static route6 1002::0/64 next-hop 1001::2
+vyos@msk-tbamnturov-gw-01# commit
+vyos@msk-tbamnturov-gw-01# save
+```
+
+![Настройка статической маршрутизации IPv6 на gw-01](image/115.png){#fig-115 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-116]):
+
+```
+vyos@msk-tbamnturov-gw-02:~$ configure
+vyos@msk-tbamnturov-gw-02# set protocols static route6 1000::0/64 next-hop 1001::1
+vyos@msk-tbamnturov-gw-02# commit
+vyos@msk-tbamnturov-gw-02# save
+```
+
+![Настройка статической маршрутизации IPv6 на gw-02](image/116.png){#fig-116 width=70%}
+
+Проверили доступность оконечных устройств ([рис. @fig-117]), ([рис. @fig-118]):
+
+```
+PC1-user> ping 1002::a
+PC1-user> trace 1002::a
+```
+
+и 
+
+```
+PC2-user> ping 1000::a
+PC2-user> trace 1000::a
+```
+
+![Отправка эхо-запроса с PC1 к PC2](image/117.png){#fig-117 width=70%}
+
+![Отправка эхо-запроса с PC2 к PC1](image/118.png){#fig-118 width=70%}
+
+Пакеты, проходящие по туннелю, имеют одновременно поля IPv4 и IPv6 ([рис. @fig-119])
+
+![Захваченный трафик (3)](image/119.png){#fig-119 width=70%}
+
+## Задание для самостоятельного выполнения
+
+Запустили GNS3 VM и GNS3 и создали новый проект ([рис. @fig-120])
+
+![Создание нового проекта (3)](image/120.png){#fig-120 width=70%}
+
+Задана топология сети ([рис. @fig-121]), адреса сегментов сети (табл. 3.4). Заполнили таблицу адресации (табл. 3.5)
+
+![Топология сети](image/121.png){#fig-121 width=70%}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Таблица адресов сетей}
+\label{table:table}
+\begin{tabular}{|p{5cm}|p{5cm}|p{5cm}|}
+\textbf{Устройства} & \textbf{Сеть IPv4} & \textbf{Сеть IPv6} \\
+\hline
+PC1 – gw-01 & 10.10.1.96/27 & 2001:db8:1:1::/64 \\ \hline
+PC2 – gw-02 & 10.10.1.64/28 & 2001:db8:1:6::/64 \\ \hline
+gw-01 – gw-03 & 10.10.1.4/30 & 2001:db8:1:2::/64 \\ \hline
+gw-02 – gw-04 & 10.10.1.8/30 & 2001:db8:1:3::/64 \\ \hline
+gw-03 – gw-02 & 10.10.1.16/30 & 2001:db8:1:4::/64 \\ \hline
+gw-04 – gw-02 & 10.10.1.32/30 & 2001:db8:1:5::/64 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Таблица адресации}
+\label{table:table}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3cm}|p{3cm}|p{3cm}|}
+\textbf{Устройство} & \textbf{Интерфейс} & \textbf{Адрес IP/префикс} & \textbf{Шлюз по умолчанию} & \textbf{Следующее устройство} \\
+\hline
+gw-01 & eth0 & 10.10.1.97/27 & n/a & PC1 \\ \hline
+gw-01 & eth0 & 2001:db8:1:1::1/64 & n/a & PC1 \\ \hline
+gw-01 & eth1 & 10.10.1.5/30 & n/a & gw-03 \\ \hline
+gw-01 & eth1 & 2001:db8:1:2::1/64 & n/a & gw-03 \\ \hline
+gw-01 & eth2 & 10.10.1.9/30 & n/a & gw-04 \\ \hline
+gw-01 & eth2 & 2001:db8:1:3::1/64 & n/a & gw-04 \\ \hline
+gw-02 & eth0 & 10.10.1.65/28 & n/a & PC2 \\ \hline
+gw-02 & eth0 & 2001:db8:1:6::1/64 & n/a & PC2 \\ \hline
+gw-02 & eth1 & 10.10.1.18/30 & n/a & gw-03 \\ \hline
+gw-02 & eth1 & 2001:db8:1:4::1/64 & n/a & gw-03 \\ \hline
+gw-02 & eth2 & 10.10.1.33/30 & n/a & gw-04 \\ \hline
+gw-02 & eth2 & 2001:db8:1:5::1/64 & n/a & gw-04 \\ \hline
+gw-03 & eth0 & 10.10.1.6/30 & n/a & gw-01 \\ \hline
+gw-03 & eth0 & 2001:db8:1:2::2/64 & n/a & gw-01 \\ \hline
+gw-03 & eth1 & 10.10.1.17/30 & n/a & gw-02 \\ \hline
+gw-03 & eth1 & 2001:db8:1:4::2/64 & n/a & gw-02 \\ \hline
+gw-04 & eth0 & 10.10.1.10/30 & n/a & gw-01 \\ \hline
+gw-04 & eth0 & 2001:db8:1:3::2/64 & n/a & gw-01 \\ \hline
+gw-04 & eth1 & 10.10.1.34/30 & n/a & gw-02 \\ \hline
+gw-04 & eth1 & 2001:db8:1:5::2/64 & n/a & gw-02 \\ \hline
+PC1 & NIC & 10.10.1.98/27 & 10.10.1.97 & gw-01 \\ \hline
+PC1 & NIC & 2001:db8:1:1::2/64 & n/a & gw-01 \\ \hline
+PC2 & NIC & 10.10.1.66/28 & 10.10.1.65 & gw-02 \\ \hline
+PC2 & NIC & 2001:db8:1:6::2/64 & n/a & gw-02 \\ \hline
+\end{tabular}
+\end{table}
+
+В рабочем пространстве разместили и соединили устройства в соответствии с топологией, приведённой на ([рис. @fig-121]). Использовали маршрутизаторы FRR
+
+Присвоили IPv4 и IPv6-адресов оконечному устройству PC1 в соответствии с данными в (табл. 3.5) ([рис. @fig-122]):
+
+```
+ip 10.10.1.98/27 10.10.1.97
+ip 2001:db8:1:1::2/64
+save
+```
+
+![Присвоение IPv4 и IPv6-адресов PC1](image/122.png){#fig-122 width=70%}
+
+Присвоили IPv4 и IPv6-адресов оконечному устройству PC2 в соответствии с данными в (табл. 3.5) ([рис. @fig-123]):
+
+```
+ip 10.10.1.66/28 10.10.1.65
+ip 2001:db8:1:6::2/64
+save
+```
+
+![Присвоение IPv4 и IPv6-адресов PC2](image/123.png){#fig-123 width=70%}
+
+Настроили IPv4-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-01 ([рис. @fig-124]):
+
+```
+frr# configure terminal
+frr(config)# hostname msk-tbamnturov-gw-01
+msk-tbamnturov-gw-01(config)# interface eth0
+msk-tbamnturov-gw-01(config-if)# ip address 10.10.1.97/27
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth1
+msk-tbamnturov-gw-01(config-if)# ip address 10.10.1.5/30
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth2
+msk-tbamnturov-gw-01(config-if)# ip address 10.10.1.9/30
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка IPv4-адресов на интерфейсах маршрутизатора gw-01](image/124.png){#fig-124 width=70%}
+
+Настроили IPv4-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-02 ([рис. @fig-125]):
+
+```
+frr# configure terminal
+frr(config)# hostname msk-tbamnturov-gw-02
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# ip address 10.10.1.65/28
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth1
+msk-tbamnturov-gw-02(config-if)# ip address 10.10.1.18/30
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth2
+msk-tbamnturov-gw-02(config-if)# ip address 10.10.1.33/30
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка IPv4-адресов на интерфейсах маршрутизатора gw-02](image/125.png){#fig-125 width=70%}
+
+Настроили IPv4-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-03 ([рис. @fig-126]):
+
+```
+frr# configure terminal
+frr(config)# hostname msk-tbamnturov-gw-03
+msk-tbamnturov-gw-03(config)# interface eth0
+msk-tbamnturov-gw-03(config-if)# ip address 10.10.1.6/30
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth1
+msk-tbamnturov-gw-03(config-if)# ip address 10.10.1.17/30
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка IPv4-адресов на интерфейсах маршрутизатора gw-03](image/126.png){#fig-126 width=70%}
+
+Настроили IPv4-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-04 ([рис. @fig-127]):
+
+```
+frr# configure terminal
+frr(config)# hostname msk-tbamnturov-gw-04
+msk-tbamnturov-gw-04(config)# interface eth0
+msk-tbamnturov-gw-04(config-if)# ip address 10.10.1.10/30
+msk-tbamnturov-gw-04(config-if)# no shutdown
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# ip address 10.10.1.34/30
+msk-tbamnturov-gw-04(config-if)# no shutdown
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка IPv4-адресов на интерфейсах маршрутизатора gw-04](image/127.png){#fig-127 width=70%}
+
+Настроили IPv6-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-01 ([рис. @fig-128]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# ipv6 forwarding
+msk-tbamnturov-gw-01(config)# interface eth0
+msk-tbamnturov-gw-01(config-if)# ipv6 address 2001:db8:1:1::1/64
+msk-tbamnturov-gw-01(config-if)# no ipv6 nd suppress-ra
+msk-tbamnturov-gw-01(config-if)# ipv6 nd prefix 2001:db8:1:1::/64
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth1
+msk-tbamnturov-gw-01(config-if)# ipv6 address 2001:db8:1:2::1/64
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth2
+msk-tbamnturov-gw-01(config-if)# ipv6 address 2001:db8:1:3::1/64
+msk-tbamnturov-gw-01(config-if)# no shutdown
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка IPv6-адресов на интерфейсах маршрутизатора gw-01](image/128.png){#fig-128 width=70%}
+
+Настроили IPv6-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-02 ([рис. @fig-129]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# ipv6 forwarding
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# ipv6 address 2001:db8:1:6::1/64
+msk-tbamnturov-gw-01(config-if)# no ipv6 nd suppress-ra
+msk-tbamnturov-gw-01(config-if)# ipv6 nd prefix 2001:db8:1:6::/64
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth1
+msk-tbamnturov-gw-02(config-if)# ipv6 address 2001:db8:1:4::1/64
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth2
+msk-tbamnturov-gw-02(config-if)# ipv6 address 2001:db8:1:5::1/64
+msk-tbamnturov-gw-02(config-if)# no shutdown
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка IPv6-адресов на интерфейсах маршрутизатора gw-02](image/129.png){#fig-129 width=70%}
+
+Настроили IPv6-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-03 ([рис. @fig-130]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# ipv6 forwarding
+msk-tbamnturov-gw-03(config)# interface eth0
+msk-tbamnturov-gw-03(config-if)# ipv6 address 2001:db8:1:2::2/64
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth1
+msk-tbamnturov-gw-03(config-if)# ipv6 address 2001:db8:1:4::2/64
+msk-tbamnturov-gw-03(config-if)# no shutdown
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка IPv6-адресов на интерфейсах маршрутизатора gw-03](image/130.png){#fig-130 width=70%}
+
+Настроили IPv6-адреса на интерфейсах маршрутизатора msk-tbamnturov-gw-04 ([рис. @fig-131]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# ipv6 forwarding
+msk-tbamnturov-gw-04(config)# interface eth0
+msk-tbamnturov-gw-04(config-if)# ipv6 address 2001:db8:1:3::2/64
+msk-tbamnturov-gw-04(config-if)# no shutdown
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# ipv6 address 2001:db8:1:5::2/64
+msk-tbamnturov-gw-04(config-if)# no shutdown
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка IPv6-адресов на интерфейсах маршрутизатора gw-04](image/131.png){#fig-131 width=70%}
+
+На маршрутизаторах настроили RIP для сетей IPv4:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-132]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# router rip
+msk-tbamnturov-gw-01(config-router)# version 2
+msk-tbamnturov-gw-01(config-router)# network eth0
+msk-tbamnturov-gw-01(config-router)# network eth1
+msk-tbamnturov-gw-01(config-router)# network eth2
+msk-tbamnturov-gw-01(config-router)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка маршрутизации по протоколу RIP на gw-01](image/132.png){#fig-132 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-133]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# router rip
+msk-tbamnturov-gw-02(config-router)# version 2
+msk-tbamnturov-gw-02(config-router)# network eth0
+msk-tbamnturov-gw-02(config-router)# network eth1
+msk-tbamnturov-gw-02(config-router)# network eth2
+msk-tbamnturov-gw-02(config-router)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка маршрутизации по протоколу RIP на gw-02](image/133.png){#fig-133 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-134]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# router rip
+msk-tbamnturov-gw-03(config-router)# version 2
+msk-tbamnturov-gw-03(config-router)# network eth0
+msk-tbamnturov-gw-03(config-router)# network eth1
+msk-tbamnturov-gw-03(config-router)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка маршрутизации по протоколу RIP на gw-03](image/134.png){#fig-134 width=70%}
+
+- для msk-tbamnturov-gw-04 ([рис. @fig-135]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# router rip
+msk-tbamnturov-gw-04(config-router)# version 2
+msk-tbamnturov-gw-04(config-router)# network eth0
+msk-tbamnturov-gw-04(config-router)# network eth1
+msk-tbamnturov-gw-04(config-router)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка маршрутизации по протоколу RIP на gw-04](image/135.png){#fig-135 width=70%}
+
+Убедились, что маршрутизация по RIP настроена ([рис. @fig-136]), ([рис. @fig-137]), ([рис. @fig-138]):
+
+```
+msk-tbamnturov-gw-01#show ip route rip
+msk-tbamnturov-gw-01#show ip rip
+msk-tbamnturov-gw-01#show ip rip status
+```
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-01 (1)](image/136.png){#fig-136 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-01 (2)](image/137.png){#fig-137 width=70%}
+
+![Проверка настроек маршрутизации по протоколу RIP на gw-01 (3)](image/138.png){#fig-138 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит через маршрутизатор msk-tbamnturov-gw-03 ([рис. @fig-139]):
+
+```
+PC1> ping 10.10.1.66
+PC1> trace 10.10.1.66 -P 6
+```
+
+![Эхо-запрос от PC1 к PC2 (1)](image/139.png){#fig-139 width=70%}
+
+Так как пакет проходит через маршрутизатор msk-tbamnturov-gw-03, отключили на нём интерфейс ([рис. @fig-140]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# interface eth0
+msk-tbamnturov-gw-03(config-if)# shutdown
+```
+
+![Отключение интерфейса на маршрутизаторе gw-03 (1)](image/140.png){#fig-140 width=70%}
+
+Проверили метрики протокола RIP: ```msk-tbamnturov-gw-01# show ip rip``` ([рис. @fig-141])
+
+![Метрики протокола RIP](image/141.png){#fig-141 width=70%}
+
+С PC1 пропинговали PC2. Теперь пакет проходит через маршрутизатор msk-tbamnturov-gw-04. Маршрут восстановился ~ за 3 минуты ([рис. @fig-142])
+
+![Эхо-запрос от PC1 к PC2 (2)](image/142.png){#fig-142 width=70%}
+
+На маршрутизаторах настроили RIPng для сетей IPv6:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-143]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# router ripng
+msk-tbamnturov-gw-01(config-router)# network eth0
+msk-tbamnturov-gw-01(config-router)# network eth1
+msk-tbamnturov-gw-01(config-router)# network eth2
+msk-tbamnturov-gw-01(config-router)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка маршрутизации по протоколу RIPng на gw-01](image/143.png){#fig-143 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-144]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# router ripng
+msk-tbamnturov-gw-02(config-router)# network eth0
+msk-tbamnturov-gw-02(config-router)# network eth1
+msk-tbamnturov-gw-02(config-router)# network eth2
+msk-tbamnturov-gw-02(config-router)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка маршрутизации по протоколу RIPng на gw-02](image/144.png){#fig-144 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-145]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# router ripng
+msk-tbamnturov-gw-03(config-router)# network eth0
+msk-tbamnturov-gw-03(config-router)# network eth1
+msk-tbamnturov-gw-03(config-router)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка маршрутизации по протоколу RIPng на gw-03](image/145.png){#fig-145 width=70%}
+
+- для msk-tbamnturov-gw-04 ([рис. @fig-146]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# router ripng
+msk-tbamnturov-gw-04(config-router)# network eth0
+msk-tbamnturov-gw-04(config-router)# network eth1
+msk-tbamnturov-gw-04(config-router)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка маршрутизации по протоколу RIPng на gw-04](image/146.png){#fig-146 width=70%}
+
+Проверили метрики протокола RIPng: ```msk-tbamnturov-gw-01# show ipv6 ripng``` ([рис. @fig-147])
+
+![Метрики протокола RIPng (1)](image/147.png){#fig-147 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит через маршрутизатор msk-tbamnturov-gw-03 ([рис. @fig-148]):
+
+```
+PC1> ping 2001:db8:1:6::2
+PC1> trace 2001:db8:1:6::2
+```
+
+![Эхо-запрос от PC1 к PC2 (3)](image/148.png){#fig-148 width=70%}
+
+Так как пакет проходит через маршрутизатор msk-tbamnturov-gw-03, отключили на нём интерфейс ([рис. @fig-149]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# interface eth0
+msk-tbamnturov-gw-03(config-if)# shutdown
+```
+
+![Отключение интерфейса на маршрутизаторе gw-03 (2)](image/149.png){#fig-149 width=70%}
+
+Проверили метрики протокола RIPng: ```msk-tbamnturov-gw-01# show ipv6 ripng``` ([рис. @fig-150])
+
+![Метрики протокола RIPng (2)](image/150.png){#fig-150 width=70%}
+
+С PC1 пропинговали PC2. Путь не восстановился ([рис. @fig-151])
+
+![Эхо-запрос от PC1 к PC2 (4)](image/151.png){#fig-151 width=70%}
+
+На маршрутизаторах настроили OSPFv2 для сетей IPv4:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-152]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# router ospf
+msk-tbamnturov-gw-01(config-router)# network 10.10.1.64/28 area 0.0.0.0
+msk-tbamnturov-gw-01(config-router)# network 10.10.1.4/30 area 0.0.0.0
+msk-tbamnturov-gw-01(config-router)# network 10.10.1.8/30 area 0.0.0.0
+msk-tbamnturov-gw-01(config-router)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv2 на gw-01](image/152.png){#fig-152 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-153]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# router ospf
+msk-tbamnturov-gw-02(config-router)# network 10.10.1.64/28 area 0.0.0.0
+msk-tbamnturov-gw-02(config-router)# network 10.10.1.16/30 area 0.0.0.0
+msk-tbamnturov-gw-02(config-router)# network 10.10.1.32/30 area 0.0.0.0
+msk-tbamnturov-gw-02(config-router)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv2 на gw-02](image/153.png){#fig-153 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-154]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# router ospf
+msk-tbamnturov-gw-03(config-router)# network 10.10.1.4/30 area 0.0.0.0
+msk-tbamnturov-gw-03(config-router)# network 10.10.1.16/30 area 0.0.0.0
+msk-tbamnturov-gw-03(config-router)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv2 на gw-03](image/154.png){#fig-154 width=70%}
+
+- для msk-tbamnturov-gw-04 ([рис. @fig-155]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# router ospf
+msk-tbamnturov-gw-04(config-router)# network 10.10.1.8/30 area 0.0.0.0
+msk-tbamnturov-gw-04(config-router)# network 10.10.1.32/30 area 0.0.0.0
+msk-tbamnturov-gw-04(config-router)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv2 на gw-04](image/155.png){#fig-155 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит через маршрутизатор msk-tbamnturov-gw-04 ([рис. @fig-156]):
+
+```
+PC1> ping 10.10.1.6
+PC1> trace 10.10.1.6 -P 6
+```
+
+![Эхо-запрос от PC1 к PC2 (5)](image/156.png){#fig-156 width=70%}
+
+Проверили таблицу маршрутизации протокола OSPFv2 ([рис. @fig-157]):
+
+```
+msk-tbamnturov-gw-01# show ip ospf neighbor
+msk-tbamnturov-gw-01# show ip ospf route
+```
+
+![Таблица маршрутизации протокола OSPFv2 (1)](image/157.png){#fig-157 width=70%}
+
+Так как пакет проходит через маршрутизатор msk-tbamnturov-gw-04, отключили на нём интерфейс ([рис. @fig-158]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# shutdown
+```
+
+![Отключение интерфейса на маршрутизаторе gw-04](image/158.png){#fig-158 width=70%}
+
+Проверили таблицу маршрутизации протокола OSPFv2 ([рис. @fig-159]):
+
+```
+msk-tbamnturov-gw-01# show ip ospf neighbor
+msk-tbamnturov-gw-01# show ip ospf route
+```
+
+![Таблица маршрутизации протокола OSPFv2 (2)](image/159.png){#fig-159 width=70%}
+
+С PC1 пропинговали PC2. Теперь пакет проходит через маршрутизатор msk-tbamnturov-gw-03. Маршрут восстановился ~ за 2 минуты ([рис. @fig-160])
+
+![Эхо-запрос от PC1 к PC2 (6)](image/160.png){#fig-160 width=70%}
+
+На маршрутизаторах настроили OSPFv3 для сетей IPv6:
+
+- для msk-tbamnturov-gw-01 ([рис. @fig-161]):
+
+```
+msk-tbamnturov-gw-01# configure terminal
+msk-tbamnturov-gw-01(config)# router ospf6
+msk-tbamnturov-gw-01(config-rtr)# ospf6 router-id 1.1.1.1
+msk-tbamnturov-gw-01(config-rtr)# exit
+msk-tbamnturov-gw-01(config)# interface eth0
+msk-tbamnturov-gw-01(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth1
+msk-tbamnturov-gw-01(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# interface eth2
+msk-tbamnturov-gw-01(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-01(config-if)# exit
+msk-tbamnturov-gw-01(config)# exit
+msk-tbamnturov-gw-01# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv3 на gw-01](image/161.png){#fig-161 width=70%}
+
+- для msk-tbamnturov-gw-02 ([рис. @fig-162]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# router ospf6
+msk-tbamnturov-gw-02(config-rtr)# ospf6 router-id 2.2.2.2
+msk-tbamnturov-gw-02(config-rtr)# exit
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth1
+msk-tbamnturov-gw-02(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# interface eth2
+msk-tbamnturov-gw-02(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-02(config-if)# exit
+msk-tbamnturov-gw-02(config)# exit
+msk-tbamnturov-gw-02# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv3 на gw-02](image/162.png){#fig-162 width=70%}
+
+- для msk-tbamnturov-gw-03 ([рис. @fig-163]):
+
+```
+msk-tbamnturov-gw-03# configure terminal
+msk-tbamnturov-gw-03(config)# router ospf6
+msk-tbamnturov-gw-03(config-rtr)# ospf6 router-id 3.3.3.3
+msk-tbamnturov-gw-03(config-rtr)# exit
+msk-tbamnturov-gw-03(config)# interface eth0
+msk-tbamnturov-gw-03(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# interface eth1
+msk-tbamnturov-gw-03(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-03(config-if)# exit
+msk-tbamnturov-gw-03(config)# exit
+msk-tbamnturov-gw-03# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv3 на gw-03](image/163.png){#fig-163 width=70%}
+
+- для msk-tbamnturov-gw-04 ([рис. @fig-164]):
+
+```
+msk-tbamnturov-gw-04# configure terminal
+msk-tbamnturov-gw-04(config)# router ospf6
+msk-tbamnturov-gw-04(config-rtr)# ospf6 router-id 4.4.4.4
+msk-tbamnturov-gw-04(config-rtr)# exit
+msk-tbamnturov-gw-04(config)# interface eth0
+msk-tbamnturov-gw-04(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# interface eth1
+msk-tbamnturov-gw-04(config-if)# ipv6 ospf6 area 0
+msk-tbamnturov-gw-04(config-if)# exit
+msk-tbamnturov-gw-04(config)# exit
+msk-tbamnturov-gw-04# write memory
+```
+
+![Настройка маршрутизации по протоколу OSPFv3 на gw-04](image/164.png){#fig-164 width=70%}
+
+С PC1 пропинговали PC2. Пакет проходит через маршрутизатор msk-tbamnturov-gw-03 ([рис. @fig-165]):
+
+```
+PC1> 2001:db8:1:6::2
+PC1> trace 2001:db8:1:6::2
+```
+
+![Эхо-запрос от PC1 к PC2 (7)](image/165.png){#fig-165 width=70%}
+
+Проверили таблицу маршрутизации протокола OSPFv3 ([рис. @fig-166]):
+
+```
+msk-tbamnturov-gw-01# show ipv6 ospf6 neighbor
+msk-tbamnturov-gw-01# show ipv6 ospf6 route
+```
+
+![Таблица маршрутизации протокола OSPFv3 (1)](image/166.png){#fig-166 width=70%}
+
+Так как пакет проходит через маршрутизатор msk-tbamnturov-gw-03, отключили на нём интерфейс ([рис. @fig-167]):
+
+```
+msk-tbamnturov-gw-02# configure terminal
+msk-tbamnturov-gw-02(config)# interface eth0
+msk-tbamnturov-gw-02(config-if)# shutdown
+```
+
+![Отключение интерфейса на маршрутизаторе gw-03 (3)](image/167.png){#fig-167 width=70%}
+
+Проверили таблицу маршрутизации протокола OSPFv3 ([рис. @fig-168]):
+
+```
+msk-tbamnturov-gw-01# show ipv6 ospf6 neighbor
+msk-tbamnturov-gw-01# show ipv6 ospf6 route
+```
+
+![Таблица маршрутизации протокола OSPFv3 (2)](image/168.png){#fig-168 width=70%}
+
+С PC1 пропинговали PC2. Теперь пакет проходит через маршрутизатор msk-tbamnturov-gw-04. Маршрут восстановился ~ за 2 минуты ([рис. @fig-169])
+
+![Эхо-запрос от PC1 к PC2 (8)](image/169.png){#fig-169 width=70%}
+
+# Выводы
+
+В ходе выполнения лабораторной работы №8 мы получили изучили принципы маршрутизации в IPv4- и IPv6-сетях и принципы настройки сетевого оборудования.
+
+# Список литературы
+
+1. [Лаборатораня работа №8](https://esystem.rudn.ru/pluginfile.php/2858387/mod_resource/content/1/008-lab_routing-GNS3.pdf)
